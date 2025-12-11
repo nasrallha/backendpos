@@ -29,7 +29,7 @@ const registerUser = async (req, res,next) => {
       return res.status(400).json({ msg: "An unknown error occurred when uploading" })
     }
     // Everything went fine.
-    const { name, email, password, role,username, createdDate, createdTime } = req.body;
+    const { name, email, password, role,username } = req.body;
     let avatarPath;
     if(req.file){
       avatarPath =`${avatarDestination}/${req.file.filename}`

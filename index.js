@@ -1,4 +1,5 @@
 const express = require('express');
+const mongoose = require("mongoose");
 const dotenv =require('dotenv').config();
 const cors = require("cors");
 const path = require('path');
@@ -25,6 +26,8 @@ const reportRouter = require('./routes/reportRoutes');
 const paymentRouter = require('./routes/paymentsRountes');
 const voucherRouter = require('./routes/voucherRoutes');
 const printeRouter = require('./routes/printRoutes');
+const quotationRouter = require('./routes/quotationRoutes');
+const employeeRouter = require('./routes/employeeRoutes');
 const globleErrorHandler = require('./controllers/error');
 
 const CustomError = require('./config/CustomError');
@@ -33,7 +36,6 @@ process.on('uncaughtException', (err) => {
     console.log('Uncaught Exception occured! Shutting down...');
     process.exit(1);
  })
-const port  = process.env.PORT || 8000;
 
 const app = express();
 //cors
@@ -43,11 +45,19 @@ app.use(express.json());
 app.use(express.urlencoded({extended:true}));
 // folder upload images
 app.use(express.static('uploads'));
-// connect for database
-connectionDB();
 // use router
 app.get("/api/ping", (req, res) => {
     res.status(200).json({ status: "ok" });
+});
+// check database connected
+app.use((req, res, next) => {
+    if (mongoose.connection.readyState !== 1) {
+        return res.status(503).json({
+            success: false,
+            message: "⚠️ غير قادر على الاتصال بقاعدة البيانات. حاول لاحقًا."
+        });
+    }
+    next();
 });
 app.use('/api/auth',authRouter);
 app.use('/api/user',userRouter);
@@ -70,19 +80,26 @@ app.use('/api/report',reportRouter);
 app.use('/api/payments',paymentRouter);
 app.use('/api/voucher',voucherRouter);
 app.use('/api/print',printeRouter);
+app.use('/api/quotation',quotationRouter);
+app.use('/api/employee',employeeRouter);
 //error handler router
 app.use('*',errorHandelRouter);
 // handel express error
 app.use(globleErrorHandler)
-// run server
-const server = app.listen(port,()=>{
-    console.log(`Server running at port ${port}`)
+// connect database and run server
+const PORT = process.env.PORT || 8000;
+// Start server after DB connection ONLY
+connectionDB().then(() => {
+    if(mongoose.connection.readyState !== 1){
+         const server = app.listen(PORT, () =>
+        console.log(`Server running on port ${PORT}`)
+        );
+    }
+   
+    // Handle async unhandled promise rejections
+    // process.on("unhandledRejection", (err) => {
+    //     console.error("Unhandled Rejection:", err);
+    //     server.close(() => process.exit(1));
+    // });
 });
-process.on('unhandledRejection', (err) => {
-    console.log(err.name, err.message);
-    console.log('Unhandled rejection occured! Shutting down...');
-    server.close(() => {
-     process.exit(1);
-    })
- })
  

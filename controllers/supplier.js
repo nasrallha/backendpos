@@ -45,6 +45,7 @@ const addSupplier = (req, res, next) => {
       const {
         code,
         name,
+        ar_name,
         email,
         phone,
         bankAccount,
@@ -54,6 +55,12 @@ const addSupplier = (req, res, next) => {
         city,
         district,
         street,
+        address,
+        ar_country,
+        ar_city,
+        ar_district,
+        ar_street,
+        ar_address,
         buildingNo,
         secondaryNo,
         postalCode,
@@ -136,20 +143,27 @@ const addSupplier = (req, res, next) => {
         }
         // create new supplier
         const newSupplier = await Supplier.create({
-          code,
-          name,
-          email,
-          phone,
-          bankAccount,
-          vatNumber,
-          commercialNo,
-          country,
-          city,
-          district,
-          street,
-          buildingNo,
-          secondaryNo,
-          postalCode,
+          code:code.trim(),
+          name:name.trim(),
+          ar_name:ar_name.trim(),
+          email:email.trim(),
+          phone:phone.trim(),
+          bankAccount:bankAccount.trim(),
+          vatNumbe:vatNumber.trim(),
+          commercialNo:commercialNo.trim(),
+          country:country.trim(),
+          city:city.trim(),
+          district:district.trim(),
+          street:street.trim(),
+          address:address.trim(),
+          ar_country:ar_country.trim(),
+          ar_city:ar_city.trim(),
+          ar_district:ar_district.trim(),
+          ar_street:ar_street.trim(),
+          ar_address:ar_address.trim(),
+          buildingNo:buildingNo.trim(),
+          secondaryNo:secondaryNo.trim(),
+          postalCode:postalCode.trim(),
           credit: credit !== "" ? credit : 0,
           debit: debit !== "" ? debit : 0,
           image: supplierImage,
@@ -244,7 +258,7 @@ const updateSupplier = (req, res, next) => {
           req.body.image = newSupplierImage;
           const updatedSupplier = await Supplier.findOneAndUpdate(
             { _id: id },
-            req.body,
+            {$set:req.body},
             { new: true, upsert: true }
           );
           return res.status(200).json({ supplier: updatedSupplier });
@@ -271,11 +285,11 @@ const deleteManySupplier = async (req, res, next) => {
     } else {
       for (let i = 0; i < suppliersIds.length; i++) {
         const suppId = suppliersIds[i];
-          const supplier = await Supplier.findById(suppId).exec();
-      if (!supplier) {
-        return next(new CustomError(`This ${suppId} is not exsist`, 400));
-      }
-      await preventDeletionIfUsed(supplier, "supplier");
+        const supplier = await Supplier.findById(suppId).exec();
+        if (!supplier) {
+          return next(new CustomError(`This ${suppId} is not exsist`, 400));
+        }
+        await preventDeletionIfUsed(supplier, "supplier");
         const deletedSupp = await Supplier.findOneAndDelete({
           _id: suppId,
         }).exec();
@@ -304,10 +318,10 @@ const deleteManySupplier = async (req, res, next) => {
 const deleteOneSupplier = async (req, res, next) => {
   try {
     const supplier = await Supplier.findById(req.params.id).exec();
-      if (!supplier) {
-        return next(new CustomError(`This ${req.params.id} is not exsist`, 400));
-      }
-      await preventDeletionIfUsed(supplier, "supplier");
+    if (!supplier) {
+      return next(new CustomError(`This ${req.params.id} is not exsist`, 400));
+    }
+    await preventDeletionIfUsed(supplier, "supplier");
     const deletedSupplier = await Supplier.findOneAndDelete({
       _id: req.params.id,
     }).exec();
@@ -396,7 +410,7 @@ const getSupplierAccountStatement = async (req, res, next) => {
     const unpaidPurchaseInvoices = await Purchase.find({
       ...purchaseQuery,
       isPurchase: true,
-       payment1:"credit"
+      payment1: "credit",
       // status: { $in: ["unpaid", "partial"] },
     }).select(
       "invoiceNumber totalAmount paidAmount netAmount remainingAmount payments status purchaseDate isPurchase"
@@ -405,7 +419,7 @@ const getSupplierAccountStatement = async (req, res, next) => {
     const unpaidReturnPurchaseInvoices = await Purchase.find({
       ...purchaseQuery,
       isPurchase: false,
-      payment1:"credit"
+      payment1: "credit",
       // status: { $in: ["unpaid", "partial", "returned"] },
     }).select(
       "invoiceNumber totalAmount netAmount paidAmount remainingAmount payments status purchaseDate isPurchase"
@@ -416,11 +430,12 @@ const getSupplierAccountStatement = async (req, res, next) => {
     }).select(
       "invoiceNumber totalAmount netAmount paidAmount remainingAmount payments status purchaseDate isPurchase"
     );
-    const supplierInvoices = allPurchaseInvoices.map((invoice)=>({
+    const supplierInvoices = allPurchaseInvoices.map((invoice) => ({
       ...invoice.toObject(),
-      paidInvoice : invoice.paidAmount + invoice.payments,
-      remaningInvoice: invoice.netAmount - (invoice.paidAmount + invoice.payments),
-    }))
+      paidInvoice: invoice.paidAmount + invoice.payments,
+      remaningInvoice:
+        invoice.netAmount - (invoice.paidAmount + invoice.payments),
+    }));
     // payments history
     const payments = await Payments.find(paymentsQuery).select(
       "code type amount paymentDate paymentMethode"
@@ -434,16 +449,21 @@ const getSupplierAccountStatement = async (req, res, next) => {
         },
       },
     ]);
-      //total payments
-    const totalPayments = paymentsAgg.length > 0 ? paymentsAgg[0].totalPayments : 0;
+    //total payments
+    const totalPayments =
+      paymentsAgg.length > 0 ? paymentsAgg[0].totalPayments : 0;
     // total debit  unpaid invoices
     const debitFromInvoices =
-      unpaidPurchaseInvoices.reduce((acc, s) => acc + s.remainingAmount, 0) || 0;
+      unpaidPurchaseInvoices.reduce((acc, s) => acc + s.remainingAmount, 0) ||
+      0;
     const totalDebit = supplier.debit + debitFromInvoices;
     // total credit unpaid return sales
-     const creditFromInvoices =
-      unpaidReturnPurchaseInvoices.reduce((acc, s) => acc + s.remainingAmount, 0) || 0;
-    // total credit 
+    const creditFromInvoices =
+      unpaidReturnPurchaseInvoices.reduce(
+        (acc, s) => acc + s.remainingAmount,
+        0
+      ) || 0;
+    // total credit
     const totalCredit = supplier.credit + creditFromInvoices + totalPayments;
     //net account
     const netBalance = totalCredit - totalDebit;
@@ -453,9 +473,9 @@ const getSupplierAccountStatement = async (req, res, next) => {
     const invoiceMovements = supplierInvoices.map((inv) => ({
       date: inv.purchaseDate,
       type: "invoice",
-      invoiceType: inv.isPurchase, // true or false 
+      invoiceType: inv.isPurchase, // true or false
       ref: inv.invoiceNumber,
-      debit: inv.isPurchase === true ? inv.remainingAmount  : 0, // purchase
+      debit: inv.isPurchase === true ? inv.remainingAmount : 0, // purchase
       credit: inv.isPurchase === false ? inv.remainingAmount : 0, // return
     }));
     // payments Movements
@@ -486,7 +506,7 @@ const getSupplierAccountStatement = async (req, res, next) => {
         supplier,
         totalDebit,
         totalCredit,
-        netBalance:netBalance,
+        netBalance: netBalance,
         invoices: supplierInvoices,
         payments,
         statement,
@@ -500,7 +520,6 @@ const getSupplierAccountStatement = async (req, res, next) => {
     });
   }
 };
-
 
 module.exports = {
   addSupplier,

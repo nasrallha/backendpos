@@ -1,21 +1,18 @@
 const mongoose = require("mongoose");
 // const CustomError = require('./CustomError');
 //connect mongoose
-
-const connectionDB = ()=>{
-    mongoose.connect('mongodb://127.0.0.1:27017/infoStore', {
+//mongodb://127.0.0.1:27017/infoStore
+// const DB_URI = "mongodb://info:info123456@127.0.0.1:27017/infoStore?authSource=infoStore";
+const connectionDB = async ()=>{
+    try {
+         mongoose.connect(process.env.DB_URL, {
         useNewUrlParser: true,
         useUnifiedTopology: true,
-    })
-    .then(() => {
-        console.log('Connected to MongoDB');
-        // return res.ststus(200).json({msg:"Connected to MongoDB"})
-    })
-    .catch((error) => {
-      console.error('Error connecting to MongoDB:', error);
-    //   const err = new CustomError(error,404);
-    //   return next(err);
     });
+     console.log('Connected to MongoDB');
+    } catch (error) {
+        console.error('Error connecting to MongoDB:', error);
+    }
 };
 
 

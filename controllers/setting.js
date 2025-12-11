@@ -15,8 +15,9 @@ const addCompanySetting = async(req, res , next)=>{
     const uploadCompanyLogo = uploadOneImage(logoDestination, "logo");
     let companyLogo = "";
     uploadCompanyLogo(req, res, async (err) => {
-      const { companyName, ar_companyName,email, phone, bankAccount, vatNumber, commercialNo, country,city, district,street, 
-        buildingNo, secondaryNo, postalCode ,salesIncludeTax,purchasesIncludeTax,taxRate,address
+      const { companyName, ar_companyName,email, phone, bankAccount, vatNumber, commercialNo, country,city, district,street,address, 
+       ar_country,ar_city, ar_district,ar_street,ar_address,branch,
+        buildingNo, secondaryNo, postalCode ,salesIncludeTax,purchasesIncludeTax,taxRate,
       } = req.body;
       if (err instanceof multer.MulterError) {
         // A Multer error occurred when uploading.
@@ -46,29 +47,35 @@ const addCompanySetting = async(req, res , next)=>{
             }
           }
             //update compny data
-            const updatedCompanyData = await Setting.findOneAndUpdate({ }, req.body, { new: true, upsert: true }).exec();
+            const updatedCompanyData = await Setting.findOneAndUpdate({ }, {$set:req.body}, { new: true, upsert: true }).exec();
             return res.status(200).json({ setting: updatedCompanyData });
         } else{
           // add new company setting
           const newCopmanySetting =  await Setting.create({
-            companyName,
-            ar_companyName,
-            email,
-            phone,
-            bankAccount,
-            vatNumber,
-            commercialNo,
-            country,
-            city,
-            district,
-            street,
-            buildingNo,
-            secondaryNo,
-            postalCode,
+            companyName:companyName.trim(),
+            ar_companyName:ar_companyName.trim(),
+            email:email.trim(),
+            phone:phone.trim(),
+            bankAccount:bankAccount.trim(),
+            vatNumber:vatNumber.trim(),
+            commercialNo:commercialNo.trim(),
+            country:country.trim(),
+            city:city.trim(),
+            district:district.trim(),
+            street:street.trim(),
+            address:address.trim(),
+            ar_country:ar_country.trim(),
+            ar_city:ar_city.trim(),
+            ar_district:ar_district.trim(),
+            ar_street:ar_street.trim(),
+            ar_address:ar_address.trim(),
+            buildingNo:buildingNo.trim(),
+            secondaryNo:secondaryNo.trim(),
+            postalCode:postalCode.trim(),
+            branch:branch.trim(),
             salesIncludeTax,
             purchasesIncludeTax,
-            taxRate,
-            address,
+            taxRate:taxRate.trim(),
             logo :companyLogo
           });
           if(newCopmanySetting !== null){
@@ -137,17 +144,19 @@ const updateCompanyData = async(req, res , next)=>{
               req.body.logo = companySetting.logo
             }
           };
-          const {phone , address , notes,logo} = req.body;
+          const {phone , address , ar_address, notes,logo ,branch} = req.body;
             //update compny data
             const updatedCompanyData = await Setting.findOneAndUpdate({ _id:req.params.id}, {$set:{
               phone,
               address,
+              ar_address,
               notes,
+              branch,
               logo
             }}, { new: true, upsert: true }).exec();
             return res.status(200).json({ setting: updatedCompanyData });
         } else{
-           return next(new CustomError(error.message, 400));
+           return next(new CustomError("there is some error in upadate company data", 400));
         }
       }});
   } catch (error) {

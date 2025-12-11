@@ -8,9 +8,11 @@ const {
   updateProduct,
   deleteProduct,
   deleteProducts,
-  getProductStock
+  getProductStock,
+  getNextProductCode
 } = require("../controllers/product.js");
-
+//get new product code
+router.get("/productCode", isAuth, getNextProductCode);
 //create new product
 router.post("/addproduct", isAuth,isAuthorizedToCreate, addNewProduct);
 // get products

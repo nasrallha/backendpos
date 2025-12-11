@@ -25,7 +25,6 @@ const productSchema = new Schema(
     baseItem: { type: String },
     limit:{type:Number,default:0},
     startStock:{type:Number,default:0},
-    stock: { type: Number, default: 0},
     createdDate: { type: String, required: true },
     createdTime: { type: String, required: true },
   },

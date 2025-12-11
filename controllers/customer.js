@@ -47,21 +47,28 @@ const addCustomer = (req, res, next) => {
       const {
         code,
         name,
+        ar_name,
         email,
         phone,
         bankAccount,
         vatNumber,
         commercialNo,
         country,
-        status,
         city,
         district,
         street,
+        address,
+        ar_country,
+        ar_city,
+        ar_district,
+        ar_street,
+        ar_address,
         buildingNo,
         secondaryNo,
         postalCode,
         credit,
         debit,
+        status,
       } = req.body;
       if (err instanceof multer.MulterError) {
         // A Multer error occurred when uploading.
@@ -137,20 +144,27 @@ const addCustomer = (req, res, next) => {
         }
         // create new supplier
         const newCusteomer = await Customer.create({
-          code,
-          name,
-          email,
-          phone,
-          bankAccount,
-          vatNumber,
-          commercialNo,
-          country,
-          city,
-          district,
-          street,
-          buildingNo,
-          secondaryNo,
-          postalCode,
+          code:code.trim(),
+          name:name.trim(),
+          ar_name:ar_name.trim(),
+          email:email.trim(),
+          phone:phone.trim(),
+          bankAccount:bankAccount.trim(),
+          vatNumbe:vatNumber.trim(),
+          commercialNo:commercialNo.trim(),
+          country:country.trim(),
+          city:city.trim(),
+          district:district.trim(),
+          street:street.trim(),
+          address:address.trim(),
+          ar_country:ar_country.trim(),
+          ar_city:ar_city.trim(),
+          ar_district:ar_district.trim(),
+          ar_street:ar_street.trim(),
+          ar_address:ar_address.trim(),
+          buildingNo:buildingNo.trim(),
+          secondaryNo:secondaryNo.trim(),
+          postalCode:postalCode.trim(),
           credit: credit !== "" ? credit : 0,
           debit: debit !== "" ? debit : 0,
           image: customerImage,
@@ -244,7 +258,7 @@ const updateCustomer = (req, res, next) => {
           req.body.image = newCustomerImage;
           const updatedCustomer = await Customer.findOneAndUpdate(
             { _id: id },
-            req.body,
+            {$set:req.body},
             { new: true, upsert: true }
           );
           return res.status(200).json({ customer: updatedCustomer });
@@ -307,10 +321,10 @@ const deleteManyCustomer = async (req, res, next) => {
 const deleteOneCustomer = async (req, res, next) => {
   try {
     const customer = await Customer.findById(req.params.id).exec();
-      if (!customer) {
-        return next(new CustomError(`This ${req.params.id} is not exsist`, 400));
-      }
-      await preventDeletionIfUsed(customer, "customer");
+    if (!customer) {
+      return next(new CustomError(`This ${req.params.id} is not exsist`, 400));
+    }
+    await preventDeletionIfUsed(customer, "customer");
     const deletedCustomer = await Customer.findOneAndDelete({
       _id: req.params.id,
     }).exec();
@@ -397,7 +411,7 @@ const getCustomerAccountStatement = async (req, res, next) => {
     const unpaidSalesInvoices = await Sales.find({
       ...salesQuery,
       isSale: true,
-      payment1:"credit"
+      payment1: "credit",
       //  status: { $in: ["unpaid", "partial", "returned"] },
     }).select(
       "invoiceNumber netAmount paidAmount remainingAmount payments status saleDate"
@@ -406,7 +420,7 @@ const getCustomerAccountStatement = async (req, res, next) => {
     const unpaidReturnSalesInvoices = await Sales.find({
       ...salesQuery,
       isSale: false,
-      payment1:"credit"
+      payment1: "credit",
       // status: { $in: ["unpaid", "partial", "returned"] },
     }).select(
       "invoiceNumber netAmount paidAmount remainingAmount payments status saleDate"
@@ -416,12 +430,13 @@ const getCustomerAccountStatement = async (req, res, next) => {
       ...salesQuery,
     }).select(
       "invoiceNumber netAmount paidAmount remainingAmount payments status saleDate isSale"
-    )
-    const customerInvoices = allSalesInvoices.map((invoice)=>({
+    );
+    const customerInvoices = allSalesInvoices.map((invoice) => ({
       ...invoice.toObject(),
-      paidInvoice : invoice.paidAmount + invoice.payments,
-      remaningInvoice: invoice.netAmount - (invoice.paidAmount + invoice.payments),
-    }))
+      paidInvoice: invoice.paidAmount + invoice.payments,
+      remaningInvoice:
+        invoice.netAmount - (invoice.paidAmount + invoice.payments),
+    }));
     // payments history
     const payments = await Payments.find(paymentsQuery).select(
       "code type amount paymentDate paymentMethode"
@@ -436,15 +451,19 @@ const getCustomerAccountStatement = async (req, res, next) => {
       },
     ]);
     //total payments
-    const totalPayments = paymentsAgg.length > 0 ? paymentsAgg[0].totalPayments : 0;
+    const totalPayments =
+      paymentsAgg.length > 0 ? paymentsAgg[0].totalPayments : 0;
     // total debit  unpaid invoices
     const debitFromInvoices =
       unpaidSalesInvoices.reduce((acc, s) => acc + s.remainingAmount, 0) || 0;
     const totalDebit = customer.debit + debitFromInvoices;
     // total credit unpaid return sales
-     const creditFromInvoices =
-      unpaidReturnSalesInvoices.reduce((acc, s) => acc + s.remainingAmount, 0) || 0;
-    // total credit 
+    const creditFromInvoices =
+      unpaidReturnSalesInvoices.reduce(
+        (acc, s) => acc + s.remainingAmount,
+        0
+      ) || 0;
+    // total credit
     const totalCredit = customer.credit + creditFromInvoices + totalPayments;
     //net account
     const netBalance = totalDebit - totalCredit;
@@ -454,7 +473,7 @@ const getCustomerAccountStatement = async (req, res, next) => {
     const invoiceMovements = customerInvoices.map((inv) => ({
       date: inv.saleDate,
       type: "invoice",
-      invoiceType: inv.isSale, // true or false 
+      invoiceType: inv.isSale, // true or false
       ref: inv.invoiceNumber,
       debit: inv.isSale === true ? inv.remainingAmount : 0, // sale
       credit: inv.isSale === false ? inv.remainingAmount : 0, // return
@@ -490,7 +509,7 @@ const getCustomerAccountStatement = async (req, res, next) => {
         netBalance: netBalance,
         invoices: customerInvoices,
         payments,
-        statement, 
+        statement,
       },
     });
   } catch (error) {

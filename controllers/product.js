@@ -12,13 +12,27 @@ const {
   createUploadFolder,
   uploadImages,
   deleteUploadImage,
-  getNexCode,
   formatCurrentDate,
   preventDeletionIfUsed,
 } = require("../middleware/helperMiddleware");
 const CustomError = require("../config/CustomError");
 const asyncErorrHandeler = require("../middleware/asyncErorrHandeler");
 const { default: mongoose } = require("mongoose");
+
+// get next product code
+const getNextProductCode = asyncErorrHandeler(async (req, res, next) => {
+  try {
+    const lastProductCode = await Product.findOne({barcode: { $regex: /^[0-9]+$/ }}).sort({ barcode: -1 }).limit(1);
+    if (lastProductCode !== null) {
+      const nextProductCode = parseInt(lastProductCode.barcode) + 1;
+      return res.status(200).json({ code: nextProductCode });
+    } else {
+      return res.status(200).json({ code: 1 });
+    }
+  } catch (error) {
+    return next(new CustomError(error.message, 400));
+  }
+});
 // applyDiscounts.js
 const applyDiscountsToProduct = (product, discounts) => {
   const now = formatCurrentDate();
@@ -46,7 +60,7 @@ const getProductStockHelper = async (productId) => {
   const product = await Product.findById(productId).exec();
   if (!product) return null;
 
-  const productFirstStock = product.stock || 0;
+  const productFirstStock = product.startStock || 0;
 
   const salesQty = await Sales.aggregate([
     { $match: { "items.productId": product._id, isSale: true } },
@@ -84,7 +98,10 @@ const getProductStockHelper = async (productId) => {
   };
 
   const netStock =
-    productFirstStock + stock.rSalesQty + stock.purchasesQty - (stock.salesQty + stock.rPurchasesQty);
+    productFirstStock +
+    stock.rSalesQty +
+    stock.purchasesQty -
+    (stock.salesQty + stock.rPurchasesQty);
 
   return { ...stock, firstStock: productFirstStock, netStock };
 };
@@ -109,7 +126,7 @@ const addNewProduct = (req, res, next) => {
         price,
         cost,
         wholesalePrice,
-        currentStock,
+        startStock,
         taxRate,
         priceIncludeTax,
         costIncludeTax,
@@ -183,7 +200,6 @@ const addNewProduct = (req, res, next) => {
           cost,
           price,
           wholesalePrice,
-          currentStock,
           taxRate,
           priceIncludeTax,
           costIncludeTax,
@@ -198,8 +214,7 @@ const addNewProduct = (req, res, next) => {
           baseItem,
           createdDate,
           createdTime,
-          startStock: currentStock,
-          stock: currentStock,
+          startStock: startStock,
           limit,
         });
         if (newProduct !== null) {
@@ -207,7 +222,13 @@ const addNewProduct = (req, res, next) => {
             .populate({ path: "category", select: "_id name ar_name" })
             .populate({ path: "brand", select: "_id name ar_name" })
             .populate({ path: "baseUnit", select: "_id name ar_name" });
-          return res.status(201).json({ product: _newNeProduct });
+          const stock = await getProductStockHelper(_newNeProduct._id);
+          return res.status(201).json({
+            product: {
+              ..._newNeProduct.toObject(),
+              stock,
+            },
+          });
         } else {
           return next(new CustomError("some thing wronge!", 400));
         }
@@ -242,7 +263,6 @@ const fetchProducts = async (req, res, next) => {
       temProducts.map(async (product) => {
         const stock = await getProductStockHelper(product._id);
         const productWithDiscount = applyDiscountsToProduct(product, discounts);
-
         return {
           ...productWithDiscount.toObject(),
           stock,
@@ -349,7 +369,13 @@ const updateProduct = async (req, res, next) => {
             .populate({ path: "category", select: "_id name ar_name" })
             .populate({ path: "brand", select: "_id name ar_name" })
             .populate({ path: "baseUnit", select: "_id name ar_name" });
-          return res.status(200).json({ product: updatedProduct });
+          const stock = await getProductStockHelper(updatedProduct._id);
+          return res.status(200).json({
+            product: {
+              ...updatedProduct.toObject(),
+              stock,
+            },
+          });
         } else {
           // delete upload images
           if (req.files) {
@@ -456,7 +482,7 @@ const getProductStock = async (req, res, next) => {
       return next(new CustomError("No product Exsist", 400));
     }
 
-    const productFirstStock = product.stock || 0;
+    const productFirstStock = product.startStock || 0;
 
     // get product sales
     const salesQty = await Sales.aggregate([
@@ -525,6 +551,7 @@ const getProductStock = async (req, res, next) => {
 module.exports = {
   addNewProduct,
   fetchProducts,
+  getNextProductCode,
   getProduct,
   updateProduct,
   deleteProduct,

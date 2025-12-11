@@ -4,6 +4,7 @@ const { isAuth } = require("../middleware/authMiddleware.js");
 const { getSalesReport } = require("../controllers/sales.js");
 const { getPurchasesReport } = require("../controllers/purchases.js");
 const { getInventoryReport, getTaxeport, getDailyReport, getBillsProfitReport, getNetProfit } = require("../controllers/report.js");
+const { getEmployeeSalary } = require("../controllers/employee.js");
 
 
 // get sales report
@@ -20,4 +21,6 @@ router.get("/daily",isAuth,getDailyReport);
 router.get("/billsprofit",isAuth,getBillsProfitReport);
 // get net profit
 router.get("/netProfit",isAuth,getNetProfit);
+// get employee salary
+router.get("/employeesalary",isAuth,getEmployeeSalary);
 module.exports = router;

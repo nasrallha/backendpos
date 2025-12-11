@@ -411,7 +411,7 @@ const getInventoryReport = async (req, res) => {
       // الرصيد النهائي
       {
         $addFields: {
-          currentStock: {
+          startStock: {
             $add: [
               "$startCurrent",
               "$totalPurchases",
@@ -450,7 +450,7 @@ const getInventoryReport = async (req, res) => {
           totalSalesReturns: 1,
           totalPurchases: 1,
           totalPurchaseReturns: 1,
-          currentStock: 1,
+          startStock: 1,
         },
       },
     ]);
@@ -1288,6 +1288,7 @@ const getNetProfit = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
 
 module.exports = {
   getTaxeport,

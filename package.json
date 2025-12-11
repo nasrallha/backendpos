@@ -5,9 +5,10 @@
   "main": "server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "server": "nodemon/server.js",
-    "front": "cd ../ && npm start --prefix front",
-    "dev": "concurrently \"npm run server\" \"npm run front\""
+    "start": "node index.js"
+  },
+  "engines": {
+    "node": "22.12.0"
   },
   "author": "Mohamed Nasrallah",
   "license": "ISC",
@@ -32,3 +33,4 @@
     "slugify": "^1.6.6"
   }
 }
+
