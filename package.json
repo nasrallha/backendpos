@@ -13,7 +13,6 @@
   "author": "Mohamed Nasrallah",
   "license": "ISC",
   "dependencies": {
-    "@node-escpos/usb-adapter": "^0.3.1",
     "bcryptjs": "^2.4.3",
     "body-parser": "^1.20.2",
     "canvas": "^3.2.0",
@@ -33,4 +32,3 @@
     "slugify": "^1.6.6"
   }
 }
-
