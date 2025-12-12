@@ -25,7 +25,6 @@ const salesRouter = require('./routes/salesRoutes');
 const reportRouter = require('./routes/reportRoutes');
 const paymentRouter = require('./routes/paymentsRountes');
 const voucherRouter = require('./routes/voucherRoutes');
-const printeRouter = require('./routes/printRoutes');
 const quotationRouter = require('./routes/quotationRoutes');
 const employeeRouter = require('./routes/employeeRoutes');
 const globleErrorHandler = require('./controllers/error');
@@ -79,7 +78,6 @@ app.use('/api/sales',salesRouter);
 app.use('/api/report',reportRouter);
 app.use('/api/payments',paymentRouter);
 app.use('/api/voucher',voucherRouter);
-app.use('/api/print',printeRouter);
 app.use('/api/quotation',quotationRouter);
 app.use('/api/employee',employeeRouter);
 //error handler router
