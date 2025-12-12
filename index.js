@@ -1,17 +1,19 @@
 const express = require('express');
 const mongoose = require("mongoose");
-const dotenv =require('dotenv').config();
+const dotenv = require('dotenv').config();
 const cors = require("cors");
-const path = require('path');
+
 const errorHandelRouter = require('./routes/errorHandelRouter');
-const {connectionDB} = require('./config/connectDB');
+const { connectionDB } = require('./config/connectDB');
+
+// Routers
 const categoryRouter = require('./routes/categoryRoutes');
 const authRouter = require('./routes/authRoutes');
 const userRouter = require('./routes/userRoutes');
 const brandRouter = require('./routes/brandRoutes');
 const productRouter = require('./routes/productRoutes');
 const supplierRouter = require('./routes/supplierRoutes');
-const customerRouter = require('./routes/customerRoutes')
+const customerRouter = require('./routes/customerRoutes');
 const purchasesRouter = require('./routes/purchasesRoutes');
 const roleRouter = require('./routes/roleRoutes');
 const pageRouter = require('./routes/pageRoutes');
@@ -27,77 +29,75 @@ const paymentRouter = require('./routes/paymentsRountes');
 const voucherRouter = require('./routes/voucherRoutes');
 const quotationRouter = require('./routes/quotationRoutes');
 const employeeRouter = require('./routes/employeeRoutes');
-const globleErrorHandler = require('./controllers/error');
 
-const CustomError = require('./config/CustomError');
-process.on('uncaughtException', (err) => {
-    console.log(err.name, err.message);
-    console.log('Uncaught Exception occured! Shutting down...');
+const globalErrorHandler = require('./controllers/error');
+
+// Handle uncaught exceptions
+process.on("uncaughtException", (err) => {
+    console.error("UNCAUGHT EXCEPTION", err);
     process.exit(1);
- })
+});
 
 const app = express();
-//cors
+
+// ──────────────── Middlewares ────────────────
 app.use(cors());
-// body barser
 app.use(express.json());
-app.use(express.urlencoded({extended:true}));
-// folder upload images
+app.use(express.urlencoded({ extended: true }));
 app.use(express.static('uploads'));
-// use router
+
+// Health Check
 app.get("/api/ping", (req, res) => {
     res.status(200).json({ status: "ok" });
 });
-// check database connected
+
+// Check DB Connection (after startup)
 app.use((req, res, next) => {
     if (mongoose.connection.readyState !== 1) {
         return res.status(503).json({
             success: false,
-            message: "⚠️ غير قادر على الاتصال بقاعدة البيانات. حاول لاحقًا."
+            message: "غير قادر على الاتصال بقاعدة البيانات. حاول لاحقًا."
         });
     }
     next();
 });
-app.use('/api/auth',authRouter);
-app.use('/api/user',userRouter);
-app.use('/api/category',categoryRouter);
-app.use('/api/brand',brandRouter);
-app.use('/api/product',productRouter);
-app.use('/api/supplier',supplierRouter);
-app.use('/api/customer',customerRouter);
-app.use('/api/role',roleRouter);
-app.use('/api/page',pageRouter);
-app.use('/api/permission',permissionRouter);
-app.use('/api/unit',unitRouter);
-app.use('/api/order',orderRouter);
-app.use('/api/purchase',purchasesRouter);
-app.use('/api/setting',settingRouter);
-app.use('/api/discount',discountRouter);
-app.use('/api/branch',branchRouter);
-app.use('/api/sales',salesRouter);
-app.use('/api/report',reportRouter);
-app.use('/api/payments',paymentRouter);
-app.use('/api/voucher',voucherRouter);
-app.use('/api/quotation',quotationRouter);
-app.use('/api/employee',employeeRouter);
-//error handler router
-app.use('*',errorHandelRouter);
-// handel express error
-app.use(globleErrorHandler)
-// connect database and run server
+
+// ──────────────── Routes ────────────────
+app.use('/api/auth', authRouter);
+app.use('/api/user', userRouter);
+app.use('/api/category', categoryRouter);
+app.use('/api/brand', brandRouter);
+app.use('/api/product', productRouter);
+app.use('/api/supplier', supplierRouter);
+app.use('/api/customer', customerRouter);
+app.use('/api/role', roleRouter);
+app.use('/api/page', pageRouter);
+app.use('/api/permission', permissionRouter);
+app.use('/api/unit', unitRouter);
+app.use('/api/order', orderRouter);
+app.use('/api/purchase', purchasesRouter);
+app.use('/api/setting', settingRouter);
+app.use('/api/discount', discountRouter);
+app.use('/api/branch', branchRouter);
+app.use('/api/sales', salesRouter);
+app.use('/api/report', reportRouter);
+app.use('/api/payments', paymentRouter);
+app.use('/api/voucher', voucherRouter);
+app.use('/api/quotation', quotationRouter);
+app.use('/api/employee', employeeRouter);
+
+// 404 handler
+app.use("*", errorHandelRouter);
+
+// Global error handler
+app.use(globalErrorHandler);
+
+// ──────────────── Start Server ────────────────
 const PORT = process.env.PORT || 8000;
-// Start server after DB connection ONLY
+
 connectionDB().then(() => {
-    if(mongoose.connection.readyState !== 1){
-         const server = app.listen(PORT, () =>
-        console.log(`Server running on port ${PORT}`)
-        );
-    }
-   
-    // Handle async unhandled promise rejections
-    // process.on("unhandledRejection", (err) => {
-    //     console.error("Unhandled Rejection:", err);
-    //     server.close(() => process.exit(1));
-    // });
+    app.listen(PORT, () => {
+        console.log(`Server running on port ${PORT}`);
+        console.log("MongoDB Connected Successfully");
+    });
 });
- 
