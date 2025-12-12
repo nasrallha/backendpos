@@ -52,15 +52,15 @@ app.get("/api/ping", (req, res) => {
 });
 
 // Check DB Connection (after startup)
-app.use((req, res, next) => {
-    if (mongoose.connection.readyState !== 1) {
-        return res.status(503).json({
-            success: false,
-            message: "غير قادر على الاتصال بقاعدة البيانات. حاول لاحقًا."
-        });
-    }
-    next();
-});
+// app.use((req, res, next) => {
+//     if (mongoose.connection.readyState !== 1) {
+//         return res.status(503).json({
+//             success: false,
+//             message: "غير قادر على الاتصال بقاعدة البيانات. حاول لاحقًا."
+//         });
+//     }
+//     next();
+// });
 
 // ──────────────── Routes ────────────────
 app.use('/api/auth', authRouter);
